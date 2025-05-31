@@ -4,63 +4,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xfight Club - Login / Register</title>
+  <title>Xfight Club - Login</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       background: linear-gradient(to right, #1e1e2f, #2d2d44);
       color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 100px;
     }
     .container {
-      background: #2b2b3d;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
-      width: 100%;
       max-width: 400px;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
+      margin: auto;
+      background-color: #2b2b3d;
+      padding: 30px;
+      border-radius: 10px;
     }
     input, button {
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
+      margin-top: 10px;
+      border-radius: 5px;
       border: none;
-      border-radius: 8px;
-    }
-    input {
-      background: #1c1c2b;
-      color: white;
     }
     button {
-      background: #4c8bf5;
+      background-color: #4c8bf5;
       color: white;
-      font-weight: bold;
       cursor: pointer;
     }
     .toggle {
-      text-align: center;
-      margin-top: 10px;
+      margin-top: 20px;
       cursor: pointer;
-      color: #88b4ff;
+      color: #4c8bf5;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2 id="form-title">Login</h2>
-    <input type="text" id="ign" placeholder="Minecraft IGN">
-    <input type="password" id="pass" placeholder="Password">
-    <input type="password" id="repass" placeholder="Re-type Password" style="display:none;">
-    <button id="loginBtn">Login</button>
-    <button id="registerBtn" style="display:none;">Register</button>
-    <div class="toggle" id="toggleMode">Don't have an account? Register</div>
+    <h1>Xfight Club</h1>
+    <div id="formContainer"></div>
+    <p class="toggle" onclick="toggleForm()">Switch to Register/Login</p>
   </div>
 
   <script type="module">
@@ -79,66 +62,61 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase();
+    const db = getDatabase(app);
     const dbRef = ref(db);
 
-    const ignInput = document.getElementById("ign");
-    const passInput = document.getElementById("pass");
-    const repassInput = document.getElementById("repass");
-    const loginBtn = document.getElementById("loginBtn");
-    const registerBtn = document.getElementById("registerBtn");
-    const toggleMode = document.getElementById("toggleMode");
-    const formTitle = document.getElementById("form-title");
+    let isLogin = true;
+    toggleForm();
 
-    let isRegister = false;
+    window.toggleForm = function () {
+      isLogin = !isLogin;
+      const form = isLogin ? `
+        <h2>Login</h2>
+        <input type="text" id="loginUser" placeholder="Minecraft IGN" required>
+        <input type="password" id="loginPass" placeholder="Password" required>
+        <button onclick="loginUser()">Login</button>
+      ` : `
+        <h2>Register</h2>
+        <input type="text" id="regUser" placeholder="Minecraft IGN" required>
+        <input type="password" id="regPass" placeholder="Password" required>
+        <input type="password" id="regConfirm" placeholder="Re-type Password" required>
+        <button onclick="registerUser()">Register</button>
+      `;
+      document.getElementById("formContainer").innerHTML = form;
+    }
 
-    toggleMode.onclick = () => {
-      isRegister = !isRegister;
-      formTitle.innerText = isRegister ? "Register" : "Login";
-      loginBtn.style.display = isRegister ? "none" : "block";
-      registerBtn.style.display = isRegister ? "block" : "none";
-      repassInput.style.display = isRegister ? "block" : "none";
-      toggleMode.innerText = isRegister ? "Already have an account? Login" : "Don't have an account? Register";
-    };
+    window.registerUser = async function () {
+      const user = document.getElementById("regUser").value.trim();
+      const pass = document.getElementById("regPass").value;
+      const confirm = document.getElementById("regConfirm").value;
+      if (!user || !pass || !confirm) return alert("Fill all fields");
+      if (pass !== confirm) return alert("Passwords do not match");
+      const snap = await get(child(dbRef, `users/${user}`));
+      if (snap.exists()) return alert("User already exists");
 
-    registerBtn.onclick = async () => {
-      const ign = ignInput.value.trim();
-      const pass = passInput.value;
-      const repass = repassInput.value;
-
-      if (!ign || !pass || !repass) return alert("Please fill in all fields");
-      if (pass !== repass) return alert("Passwords do not match");
-
-      const snapshot = await get(child(dbRef, 'users/' + ign));
-      if (snapshot.exists()) return alert("IGN already registered");
-
-      await set(ref(db, 'users/' + ign), {
+      await set(ref(db, `users/${user}`), {
         password: pass,
         xcoins: 0,
         linksCompletedToday: 0,
         lastClaimDate: ""
       });
+      alert("Registered successfully!");
+      localStorage.setItem("xfightUser", user);
+      location.href = "dashboard.html";
+    }
 
-      alert("Registered successfully");
-      localStorage.setItem("xfightUser", ign);
-      window.location.href = "dashboard.html";
-    };
+    window.loginUser = async function () {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value;
+      if (!user || !pass) return alert("Fill all fields");
+      const snap = await get(child(dbRef, `users/${user}`));
+      if (!snap.exists()) return alert("User not found");
+      const data = snap.val();
+      if (data.password !== pass) return alert("Wrong password");
 
-    loginBtn.onclick = async () => {
-      const ign = ignInput.value.trim();
-      const pass = passInput.value;
-
-      if (!ign || !pass) return alert("Please fill in all fields");
-
-      const snapshot = await get(child(dbRef, 'users/' + ign));
-      if (!snapshot.exists()) return alert("User not found");
-
-      const data = snapshot.val();
-      if (data.password !== pass) return alert("Incorrect password");
-
-      localStorage.setItem("xfightUser", ign);
-      window.location.href = "dashboard.html";
-    };
+      localStorage.setItem("xfightUser", user);
+      location.href = "dashboard.html";
+    }
   </script>
 </body>
 </html>
