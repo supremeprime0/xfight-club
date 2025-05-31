@@ -1,0 +1,164 @@
+<!-- dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xfight Club - Dashboard</title>
+  <style>
+    body {
+      background: #1e1e2f;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .section {
+      max-width: 700px;
+      margin: auto;
+      background-color: #2b2b3d;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      background-color: #4c8bf5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .store-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Xfight Club Dashboard</h1>
+  <div class="section">
+    <h2>Welcome, <span id="username"></span></h2>
+    <p>Your X-Coins: <span id="coins">0</span></p>
+    <button class="btn" onclick="visitLink()">Visit Reward Link</button>
+    <p>Links completed today: <span id="done">0</span>/10</p>
+  </div>
+
+  <div class="section">
+    <h2>Store</h2>
+    <div id="storeItems"></div>
+  </div>
+
+  <div class="section" id="adminSection" style="display:none">
+    <h2>Admin Controls</h2>
+    <input type="text" id="targetUser" placeholder="User IGN">
+    <input type="number" id="coinAmount" placeholder="Coins">
+    <button class="btn" onclick="addCoinsToUser()">Add Coins</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getDatabase, ref, get, set, update, child } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPrcws5Yu-oYkJNfUXten17goXK2FnKUg",
+      authDomain: "xfight-club.firebaseapp.com",
+      projectId: "xfight-club",
+      storageBucket: "xfight-club.firebasestorage.app",
+      messagingSenderId: "798788118687",
+      appId: "1:798788118687:web:319f89f5f60607310b1aaa",
+      measurementId: "G-KTH8MZSER1",
+      databaseURL: "https://xfight-club-default-rtdb.firebaseio.com/"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRef = ref(db);
+
+    const user = localStorage.getItem("xfightUser");
+    if (!user) location.href = "index.html";
+    document.getElementById("username").textContent = user;
+    if (user === "protier") document.getElementById("adminSection").style.display = "block";
+
+    const rewardLink = "https://ouo.io/ImUWsS";
+    const store = [
+      ["X-VIP", 1000],
+      ["X-VIP+", 1500],
+      ["X-MVP", 2000],
+      ["X-MVP+", 2500],
+      ["X-MVP++", 3000],
+      ["X-Men", 5000],
+      ["X-Women", 5000]
+    ];
+
+    const now = new Date().toISOString().split('T')[0];
+
+    async function refreshUser() {
+      const snap = await get(child(dbRef, `users/${user}`));
+      if (!snap.exists()) return alert("User not found");
+      const data = snap.val();
+      document.getElementById("coins").textContent = data.xcoins;
+      document.getElementById("done").textContent = data.lastClaimDate === now ? data.linksCompletedToday : 0;
+    }
+
+    window.visitLink = async () => {
+      const snap = await get(child(dbRef, `users/${user}`));
+      const data = snap.val();
+      let done = (data.lastClaimDate === now) ? data.linksCompletedToday : 0;
+      if (done >= 10) return alert("Max links reached for today");
+
+      window.open(rewardLink, "_blank");
+      setTimeout(async () => {
+        done++;
+        const coins = data.xcoins + 10;
+        await update(ref(db, `users/${user}`), {
+          xcoins: coins,
+          linksCompletedToday: done,
+          lastClaimDate: now
+        });
+        alert("+10 X-Coins added!");
+        refreshUser();
+      }, 15000);
+    }
+
+    window.addCoinsToUser = async () => {
+      const target = document.getElementById("targetUser").value.trim();
+      const amt = parseInt(document.getElementById("coinAmount").value);
+      if (!target || !amt) return alert("Fill all fields");
+      const snap = await get(child(dbRef, `users/${target}`));
+      if (!snap.exists()) return alert("User not found");
+      const coins = snap.val().xcoins + amt;
+      await update(ref(db, `users/${target}`), { xcoins: coins });
+      alert(`Gave ${amt} coins to ${target}`);
+    }
+
+    const storeItems = document.getElementById("storeItems");
+    store.forEach(([name, cost]) => {
+      const div = document.createElement("div");
+      div.className = "store-item";
+      div.innerHTML = `
+        <span>${name} - ${cost} X-Coins</span>
+        <button class="btn" onclick="buyItem('${name}', ${cost})">Buy</button>
+      `;
+      storeItems.appendChild(div);
+    });
+
+    window.buyItem = async (item, cost) => {
+      const snap = await get(child(dbRef, `users/${user}`));
+      const data = snap.val();
+      if (data.xcoins < cost) return alert("Not enough coins");
+      await update(ref(db, `users/${user}`), {
+        xcoins: data.xcoins - cost
+      });
+      alert(`You bought ${item}!`);
+      refreshUser();
+    }
+
+    refreshUser();
+  </script>
+</body>
+</html>
