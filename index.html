@@ -1,200 +1,70 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Xfight Club Store</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-    body {
-      background-color: #111;
-      color: #f1f1f1;
-    }
-    header {
-      padding: 1rem 2rem;
-      background: #1c1c1c;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    header h1 {
-      font-size: 1.8rem;
-    }
-    nav a {
-      color: #f1f1f1;
-      margin-left: 1.5rem;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .hero {
-      text-align: center;
-      padding: 4rem 2rem;
-    }
-    .hero h2 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-    .store, .links {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 2rem;
-      padding: 2rem;
-    }
-    .card {
-      background: #1c1c1c;
-      padding: 1.5rem;
-      border-radius: 12px;
-      text-align: center;
-    }
-    .card h3 {
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
-    }
-    .card p {
-      margin-bottom: 1rem;
-    }
-    .buy-btn, .visit-btn {
-      padding: 0.5rem 1.2rem;
-      background: #0070f3;
-      border: none;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    footer {
-      padding: 2rem;
-      text-align: center;
-      color: #777;
-    }
-  </style>
+  <title>Xfight Club - Login</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getDatabase, ref, get, set, child } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPrcws5Yu-oYkJNfUXten17goXK2FnKUg",
+      authDomain: "xfight-club.firebaseapp.com",
+      projectId: "xfight-club",
+      storageBucket: "xfight-club.firebasestorage.app",
+      messagingSenderId: "798788118687",
+      appId: "1:798788118687:web:319f89f5f60607310b1aaa",
+      measurementId: "G-KTH8MZSER1",
+      databaseURL: "https://xfight-club-default-rtdb.firebaseio.com/"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase();
+
+    window.login = async function () {
+      const ign = document.getElementById("ign").value;
+      const pass = document.getElementById("pass").value;
+
+      const snapshot = await get(ref(db, 'users/' + ign));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (data.password === pass) {
+          localStorage.setItem("xfightUser", ign);
+          window.location.href = "dashboard.html";
+        } else {
+          alert("Wrong password!");
+        }
+      } else {
+        alert("User not found. Please register.");
+      }
+    };
+
+    window.register = async function () {
+      const ign = document.getElementById("ign").value;
+      const pass = document.getElementById("pass").value;
+
+      const snapshot = await get(ref(db, 'users/' + ign));
+      if (snapshot.exists()) {
+        alert("User already exists!");
+      } else {
+        await set(ref(db, 'users/' + ign), {
+          password: pass,
+          xcoins: 0,
+          linksCompletedToday: 0,
+          lastClaimDate: ""
+        });
+        alert("Registered successfully! Now log in.");
+      }
+    };
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Xfight Club</h1>
-    <nav>
-      <a href="#">Home</a>
-      <a href="#store">Store</a>
-      <a href="#links">Earn Coins</a>
-      <a href="#login">Login</a>
-    </nav>
-  </header>
-
-  <section class="hero">
-    <h2>Welcome to the Xfight Club Store</h2>
-    <p>Earn X-Coins daily and redeem exclusive ranks.</p>
-  </section>
-
-  <section id="links" class="links">
-    <div class="card">
-      <h3>Daily Link #1</h3>
-      <p>Complete to earn 10 X-Coins</p>
-      <button class="visit-btn" onclick="visitLink(1)">Visit</button>
-    </div>
-    <div class="card">
-      <h3>Daily Link #2</h3>
-      <p>Complete to earn 10 X-Coins</p>
-      <button class="visit-btn" onclick="visitLink(2)">Visit</button>
-    </div>
-    <!-- Repeat for 10 links -->
-  </section>
-
-  <section id="store" class="store">
-    <div class="card"><h3>X-Vip</h3><p>1000 xcoins</p><button class="buy-btn" onclick="buyRank('X-Vip', 1000)">Buy</button></div>
-    <div class="card"><h3>X-Vip+</h3><p>1500 xcoins</p><button class="buy-btn" onclick="buyRank('X-Vip+', 1500)">Buy</button></div>
-    <div class="card"><h3>X-Mvp</h3><p>2000 xcoins</p><button class="buy-btn" onclick="buyRank('X-Mvp', 2000)">Buy</button></div>
-    <div class="card"><h3>X-Mvp+</h3><p>2500 xcoins</p><button class="buy-btn" onclick="buyRank('X-Mvp+', 2500)">Buy</button></div>
-    <div class="card"><h3>X-Mvp++</h3><p>3000 xcoins</p><button class="buy-btn" onclick="buyRank('X-Mvp++', 3000)">Buy</button></div>
-    <div class="card"><h3>X-Men</h3><p>5000 xcoins</p><button class="buy-btn" onclick="buyRank('X-Men', 5000)">Buy</button></div>
-    <div class="card"><h3>X-Women</h3><p>5000 xcoins</p><button class="buy-btn" onclick="buyRank('X-Women', 5000)">Buy</button></div>
-  </section>
-
-  <section id="login" style="padding: 2rem; text-align: center;">
-    <h2>Login</h2>
-    <form onsubmit="handleLogin(event)" style="margin-top: 1rem;">
-      <input type="text" id="ign" placeholder="Minecraft IGN" required style="padding: 0.5rem; width: 200px; margin-right: 0.5rem;" />
-      <input type="password" id="password" placeholder="Password" required style="padding: 0.5rem; width: 200px;" />
-      <br><br>
-      <button type="submit" class="buy-btn">Login</button>
-    </form>
-    <p id="login-message" style="margin-top: 1rem; color: lightgreen;"></p>
-  </section>
-
-  <footer>
-    <p>&copy; 2025 Xfight Club. All rights reserved.</p>
-  </footer>
-
-  <script>
-    const firebaseConfig = {
-  apiKey: "AIzaSyAPrcws5Yu-oYkJNfUXten17goXK2FnKUg",
-  authDomain: "xfight-club.firebaseapp.com",
-  projectId: "xfight-club",
-  storageBucket: "xfight-club.firebasestorage.app",
-  messagingSenderId: "798788118687",
-  appId: "1:798788118687:web:7402ccb6760124d40b1aaa"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let currentIGN = null;
-
-    function handleLogin(e) {
-      e.preventDefault();
-      const ign = document.getElementById('ign').value;
-      const pass = document.getElementById('password').value;
-      currentIGN = ign;
-      db.ref('users/' + ign).once('value').then((snapshot) => {
-        const user = snapshot.val();
-        if (user && user.password === pass) {
-          document.getElementById('login-message').textContent = 'Login successful';
-        } else if (!user) {
-          db.ref('users/' + ign).set({ password: pass, coins: 0, linksUsed: {} });
-          document.getElementById('login-message').textContent = 'Account created and logged in';
-        } else {
-          document.getElementById('login-message').textContent = 'Wrong password';
-        }
-      });
-    }
-
-    function buyRank(rank, cost) {
-      if (!currentIGN) return alert("Login first!");
-      db.ref('users/' + currentIGN).once('value').then(snapshot => {
-        const user = snapshot.val();
-        if (user.coins >= cost) {
-          db.ref('users/' + currentIGN + '/coins').set(user.coins - cost);
-          alert(`Successfully bought ${rank}`);
-        } else {
-          alert("Not enough coins!");
-        }
-      });
-    }
-
-    function visitLink(id) {
-      if (!currentIGN) return alert("Login first!");
-      const today = new Date().toISOString().split('T')[0];
-      const linkRef = db.ref('users/' + currentIGN + '/linksUsed/' + today + '/' + id);
-      linkRef.once('value').then(snapshot => {
-        if (!snapshot.exists()) {
-          window.open('https://ouo.io/ImUWsS', '_blank');
-          db.ref('users/' + currentIGN).once('value').then(userSnap => {
-            const user = userSnap.val();
-            const newCoins = (user.coins || 0) + 10;
-            db.ref('users/' + currentIGN + '/coins').set(newCoins);
-            linkRef.set(true);
-            alert('10 coins added!');
-          });
-        } else {
-          alert("You already visited this link today.");
-        }
-      });
-    }
-  </script>
+  <h2>Xfight Club - Login</h2>
+  <input type="text" id="ign" placeholder="Minecraft IGN"><br>
+  <input type="password" id="pass" placeholder="Password"><br>
+  <button onclick="login()">Login</button>
+  <button onclick="register()">Register</button>
 </body>
 </html>
