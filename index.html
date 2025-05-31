@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xfight Club</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .link-button {
+      display: block;
+      margin: 10px 0;
+      background-color: #2d89ef;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      text-align: center;
+      text-decoration: none;
+    }
+    .buy-button {
+      background-color: #4caf50;
+      margin-top: 10px;
+    }
+    .admin-panel {
+      margin-top: 40px;
+      padding: 15px;
+      background: #222;
+      border-radius: 8px;
+    }
+    input {
+      padding: 5px;
+      margin: 5px 0;
+      width: 100%;
+    }
+    button {
+      padding: 10px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin-top: 5px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Xfight Club</h1>
+    <p>Earn 10 X-Coins by visiting the link below:</p>
+    <a href="https://ouo.io/ImUWsS" target="_blank" class="link-button">Visit Link</a>
+
+    <h2>Store</h2>
+    <div>
+      <p>X-Vip - 1000 X-Coins</p>
+      <button class="buy-button">Buy</button>
+      <p>X-Vip+ - 1500 X-Coins</p>
+      <button class="buy-button">Buy</button>
+      <p>X-Mvp - 2000 X-Coins</p>
+      <button class="buy-button">Buy</button>
+      <p>X-Mvp+ - 2500 X-Coins</p>
+      <button class="buy-button">Buy</button>
+      <p>X-Mvp++ - 3000 X-Coins</p>
+      <button class="buy-button">Buy</button>
+      <p>X-Men - 5000 X-Coins</p>
+      <button class="buy-button">Buy</button>
+      <p>X-Women - 5000 X-Coins</p>
+      <button class="buy-button">Buy</button>
+    </div>
+
+    <div class="admin-panel">
+      <h3>Admin: Add X-Coins</h3>
+      <input type="text" placeholder="Minecraft IGN" id="admin-ign">
+      <input type="number" placeholder="Amount of X-Coins" id="admin-coins">
+      <button onclick="addCoins()">Add Coins</button>
+    </div>
+  </div>
+
+  <script>
+    function addCoins() {
+      const ign = document.getElementById("admin-ign").value;
+      const coins = document.getElementById("admin-coins").value;
+      alert("[ADMIN PANEL] " + coins + " X-Coins added to " + ign);
+      // This is just frontend logic for display.
+      // You should replace it with real backend Firebase call later.
+    }
+  </script>
+</body>
+</html>
