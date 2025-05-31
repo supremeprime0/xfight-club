@@ -2,12 +2,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Xfight Club - Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xfight Club - Login / Register</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(to right, #1e1e2f, #2d2d44);
+      color: white;
+    }
+    .container {
+      background: #2b2b3d;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      width: 100%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+    }
+    input {
+      background: #1c1c2b;
+      color: white;
+    }
+    button {
+      background: #4c8bf5;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .toggle {
+      text-align: center;
+      margin-top: 10px;
+      cursor: pointer;
+      color: #88b4ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="form-title">Login</h2>
+    <input type="text" id="ign" placeholder="Minecraft IGN">
+    <input type="password" id="pass" placeholder="Password">
+    <input type="password" id="repass" placeholder="Re-type Password" style="display:none;">
+    <button id="loginBtn">Login</button>
+    <button id="registerBtn" style="display:none;">Register</button>
+    <div class="toggle" id="toggleMode">Don't have an account? Register</div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-    import { getDatabase, ref, get, set, child } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPrcws5Yu-oYkJNfUXten17goXK2FnKUg",
@@ -22,49 +80,65 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase();
+    const dbRef = ref(db);
 
-    window.login = async function () {
-      const ign = document.getElementById("ign").value;
-      const pass = document.getElementById("pass").value;
+    const ignInput = document.getElementById("ign");
+    const passInput = document.getElementById("pass");
+    const repassInput = document.getElementById("repass");
+    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
+    const toggleMode = document.getElementById("toggleMode");
+    const formTitle = document.getElementById("form-title");
 
-      const snapshot = await get(ref(db, 'users/' + ign));
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        if (data.password === pass) {
-          localStorage.setItem("xfightUser", ign);
-          window.location.href = "dashboard.html";
-        } else {
-          alert("Wrong password!");
-        }
-      } else {
-        alert("User not found. Please register.");
-      }
+    let isRegister = false;
+
+    toggleMode.onclick = () => {
+      isRegister = !isRegister;
+      formTitle.innerText = isRegister ? "Register" : "Login";
+      loginBtn.style.display = isRegister ? "none" : "block";
+      registerBtn.style.display = isRegister ? "block" : "none";
+      repassInput.style.display = isRegister ? "block" : "none";
+      toggleMode.innerText = isRegister ? "Already have an account? Login" : "Don't have an account? Register";
     };
 
-    window.register = async function () {
-      const ign = document.getElementById("ign").value;
-      const pass = document.getElementById("pass").value;
+    registerBtn.onclick = async () => {
+      const ign = ignInput.value.trim();
+      const pass = passInput.value;
+      const repass = repassInput.value;
 
-      const snapshot = await get(ref(db, 'users/' + ign));
-      if (snapshot.exists()) {
-        alert("User already exists!");
-      } else {
-        await set(ref(db, 'users/' + ign), {
-          password: pass,
-          xcoins: 0,
-          linksCompletedToday: 0,
-          lastClaimDate: ""
-        });
-        alert("Registered successfully! Now log in.");
-      }
+      if (!ign || !pass || !repass) return alert("Please fill in all fields");
+      if (pass !== repass) return alert("Passwords do not match");
+
+      const snapshot = await get(child(dbRef, 'users/' + ign));
+      if (snapshot.exists()) return alert("IGN already registered");
+
+      await set(ref(db, 'users/' + ign), {
+        password: pass,
+        xcoins: 0,
+        linksCompletedToday: 0,
+        lastClaimDate: ""
+      });
+
+      alert("Registered successfully");
+      localStorage.setItem("xfightUser", ign);
+      window.location.href = "dashboard.html";
+    };
+
+    loginBtn.onclick = async () => {
+      const ign = ignInput.value.trim();
+      const pass = passInput.value;
+
+      if (!ign || !pass) return alert("Please fill in all fields");
+
+      const snapshot = await get(child(dbRef, 'users/' + ign));
+      if (!snapshot.exists()) return alert("User not found");
+
+      const data = snapshot.val();
+      if (data.password !== pass) return alert("Incorrect password");
+
+      localStorage.setItem("xfightUser", ign);
+      window.location.href = "dashboard.html";
     };
   </script>
-</head>
-<body>
-  <h2>Xfight Club - Login</h2>
-  <input type="text" id="ign" placeholder="Minecraft IGN"><br>
-  <input type="password" id="pass" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
-  <button onclick="register()">Register</button>
 </body>
 </html>
