@@ -1,86 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Xfight Club - Dashboard</title>
-  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background-color: #0f0f0f;
-      color: #fff;
+      background: #0e0e0e;
+      color: white;
       font-family: 'Segoe UI', sans-serif;
+      margin: 0;
       padding: 20px;
-      max-width: 800px;
-      margin: auto;
+      text-align: center;
     }
-
-    h1, h2 {
-      color: #00ffd5;
+    h1 {
+      color: #ff4646;
     }
-
-    .button {
-      background: #00ffd5;
-      color: #000;
-      padding: 10px;
-      margin: 5px 0;
+    .info {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #ff4646;
+      color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
+      margin: 10px;
       cursor: pointer;
     }
-
-    .button:hover {
-      background: #00cbb0;
+    button:hover {
+      background: #e03c3c;
     }
-
-    .link-button {
-      display: block;
-      margin: 10px 0;
-    }
-
-    .store, .admin-panel {
-      background: #1a1a1a;
-      padding: 15px;
-      border-radius: 10px;
+    .link-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
       margin-top: 20px;
-    }
-
-    input {
-      padding: 8px;
-      margin-right: 10px;
-    }
-
-    .logout {
-      float: right;
-      background: red;
-      color: white;
     }
   </style>
 </head>
 <body>
-  <button class="button logout" onclick="logout()">Logout</button>
-  <h1>Welcome to Xfight Club</h1>
-  <p><strong>IGN:</strong> <span id="ignDisplay"></span></p>
-  <p><strong>Xcoins:</strong> <span id="coinDisplay">0</span></p>
 
-  <h2>🔥 Earn Coins</h2>
-  <div id="linkContainer"></div>
+  <h1>Xfight Club</h1>
+  <div class="info">Welcome, <span id="ign">Loading...</span></div>
+  <div class="info">Your Xcoins: <span id="xcoins">Loading...</span></div>
+  <div class="info">Your Rank: <span id="rank">Loading...</span></div>
+  <button onclick="logout()">Logout</button>
 
-  <div class="store">
-    <h2>🛒 Store</h2>
-    <div id="storeItems"></div>
-  </div>
-
-  <div id="adminPanel" class="admin-panel" style="display: none;">
-    <h2>👑 Admin Panel</h2>
-    <input type="text" id="targetIGN" placeholder="Target IGN">
-    <input type="number" id="addAmount" placeholder="Amount">
-    <button onclick="addCoinsToUser()">Add Coins</button>
-    <div id="adminMessage"></div>
-  </div>
+  <h2>Visit Links (Daily Limit: 10)</h2>
+  <div class="link-list" id="linkList"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.1/firebase-app.js";
-    import { getDatabase, ref, onValue, update, get, child, set } from "https://www.gstatic.com/firebasejs/11.10.1/firebase-database.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.1/firebase-auth.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.10.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPrcws5Yu-oYkJNfUXten17goXK2FnKUg",
@@ -94,130 +68,58 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const auth = getAuth(app);
-
     const ign = localStorage.getItem("xfight_ign");
-    document.getElementById("ignDisplay").innerText = ign;
+    const linkList = document.getElementById("linkList");
 
-    let userEmail = "";
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        alert("Please login first.");
-        window.location.href = "index.html";
-      } else {
-        userEmail = user.email;
-        const userRef = ref(db, 'users/' + ign);
-        onValue(userRef, snapshot => {
-          const data = snapshot.val();
-          if (data) {
-            document.getElementById("coinDisplay").innerText = data.xcoins || 0;
-            const today = new Date().toISOString().split('T')[0];
-
-            if (data.lastClaimDate !== today) {
-              update(userRef, { linksCompletedToday: 0, lastClaimDate: today });
-            }
-
-            generateLinkButtons(data.linksCompletedToday || 0);
-          }
-        });
-
-        if (user.email === "supremeprime.gg@gmail.com" && ign === "protier") {
-          document.getElementById("adminPanel").style.display = "block";
-        }
-      }
-    });
-
-    function logout() {
-      signOut(auth).then(() => {
-        localStorage.removeItem("xfight_ign");
-        window.location.href = "index.html";
-      });
+    if (!ign) {
+      alert("Please login first.");
+      window.location.href = "index.html";
     }
 
-    function generateLinkButtons(count) {
-      const container = document.getElementById("linkContainer");
-      container.innerHTML = "";
+    const userRef = ref(db, 'users/' + ign);
 
+    get(userRef).then(snapshot => {
+      const data = snapshot.val();
+      document.getElementById("ign").textContent = ign;
+      document.getElementById("xcoins").textContent = data?.xcoins ?? 0;
+      document.getElementById("rank").textContent = data?.rank ?? "default";
+
+      const today = new Date().toLocaleDateString();
+      if (data?.lastClaimDate !== today) {
+        update(userRef, {
+          lastClaimDate: today,
+          linksCompletedToday: 0
+        });
+      }
+
+      const completed = data?.linksCompletedToday ?? 0;
       for (let i = 1; i <= 10; i++) {
         const btn = document.createElement("button");
-        btn.className = "button link-button";
-        btn.innerText = count >= i ? `✅ Link ${i} completed` : `Visit Link ${i}`;
-        btn.disabled = count >= i;
-        btn.onclick = () => completeLink(i);
-        container.appendChild(btn);
-      }
-    }
-
-    function completeLink(index) {
-      const shortlink = "https://ouo.io/ImUWsS";
-      window.open(shortlink, "_blank");
-
-      setTimeout(() => {
-        const userRef = ref(db, 'users/' + ign);
-        get(userRef).then(snapshot => {
-          const userData = snapshot.val();
-          if (userData && (userData.linksCompletedToday || 0) < index) {
-            const newCount = index;
-            const newCoins = (userData.xcoins || 0) + 10;
+        btn.textContent = `Visit Link #${i}`;
+        btn.disabled = i <= completed ? true : false;
+        if (!btn.disabled) {
+          btn.onclick = () => {
+            btn.disabled = true;
+            window.open("https://ouo.io/ImUWsS", "_blank");
             update(userRef, {
-              xcoins: newCoins,
-              linksCompletedToday: newCount
+              xcoins: (data?.xcoins ?? 0) + 10,
+              linksCompletedToday: completed + 1
+            }).then(() => {
+              alert("You earned 10 Xcoins!");
+              location.reload();
             });
-            alert(`You earned +10 Xcoins!`);
-          }
-        });
-      }, 3000);
-    }
-
-    const storeItems = [
-      { name: "X-VIP", cost: 1000 },
-      { name: "X-VIP+", cost: 1500 },
-      { name: "X-MVP", cost: 2000 },
-      { name: "X-MVP+", cost: 2500 },
-      { name: "X-MVP++", cost: 3000 },
-      { name: "X-Men", cost: 5000 },
-      { name: "X-Women", cost: 5000 }
-    ];
-
-    const storeContainer = document.getElementById("storeItems");
-    storeItems.forEach(item => {
-      const btn = document.createElement("button");
-      btn.className = "button";
-      btn.innerText = `${item.name} - ${item.cost} Xcoins`;
-      btn.onclick = () => purchaseItem(item.name, item.cost);
-      storeContainer.appendChild(btn);
+          };
+        }
+        linkList.appendChild(btn);
+      }
     });
+  </script>
 
-    function purchaseItem(name, cost) {
-      const userRef = ref(db, 'users/' + ign);
-      get(userRef).then(snapshot => {
-        const data = snapshot.val();
-        if (data.xcoins >= cost) {
-          update(userRef, { xcoins: data.xcoins - cost });
-          alert(`You purchased ${name}!`);
-        } else {
-          alert("Not enough Xcoins.");
-        }
-      });
+  <script>
+    function logout() {
+      localStorage.removeItem("xfight_ign");
+      window.location.href = "index.html";
     }
-
-    window.addCoinsToUser = () => {
-      const targetIGN = document.getElementById("targetIGN").value;
-      const amount = parseInt(document.getElementById("addAmount").value);
-      if (!targetIGN || isNaN(amount)) return;
-
-      const targetRef = ref(db, 'users/' + targetIGN);
-      get(targetRef).then(snapshot => {
-        if (!snapshot.exists()) {
-          alert("IGN not found.");
-          return;
-        }
-        const current = snapshot.val().xcoins || 0;
-        update(targetRef, { xcoins: current + amount });
-        document.getElementById("adminMessage").innerText = `Added ${amount} Xcoins to ${targetIGN}`;
-      });
-    };
   </script>
 </body>
 </html>
