@@ -1,8 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Xfight Club - Login / Register</title>
   <meta charset="UTF-8">
+  <title>Xfight Club - Login/Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #0f0f0f;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #ff4646;
+    }
+    .container {
+      background: #1e1e1e;
+      padding: 25px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+    input {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: #2b2b2b;
+      color: white;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #ff4646;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin-top: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e03c3c;
+    }
+    .form-switch {
+      margin-top: 15px;
+      text-align: center;
+    }
+    .form-switch a {
+      color: #4ea6ff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Xfight Club</h1>
+
+  <div class="container" id="loginBox">
+    <h2>Login</h2>
+    <input type="text" id="logIGN" placeholder="Minecraft IGN" />
+    <input type="email" id="logEmail" placeholder="Email" />
+    <input type="password" id="logPass" placeholder="Password" />
+    <button id="loginBtn">Login</button>
+    <div class="form-switch">Don't have an account? <a href="#" onclick="toggleForm()">Register</a></div>
+  </div>
+
+  <div class="container" id="registerBox" style="display:none;">
+    <h2>Register</h2>
+    <input type="text" id="regIGN" placeholder="Minecraft IGN" />
+    <input type="email" id="regEmail" placeholder="Email" />
+    <input type="password" id="regPass" placeholder="Password" />
+    <input type="password" id="regRePass" placeholder="Re-type Password" />
+    <button id="registerBtn">Register</button>
+    <div class="form-switch">Already have an account? <a href="#" onclick="toggleForm()">Login</a></div>
+  </div>
+
+  <script>
+    function toggleForm() {
+      const loginBox = document.getElementById("loginBox");
+      const registerBox = document.getElementById("registerBox");
+      loginBox.style.display = loginBox.style.display === "none" ? "block" : "none";
+      registerBox.style.display = registerBox.style.display === "none" ? "block" : "none";
+    }
+  </script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.10.1/firebase-auth.js";
@@ -22,116 +112,46 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    window.register = async () => {
-      const ign = document.getElementById("ign").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const pass = document.getElementById("pass").value;
-      const repass = document.getElementById("repass").value;
+    document.getElementById("registerBtn").addEventListener("click", () => {
+      const email = document.getElementById("regEmail").value;
+      const pass = document.getElementById("regPass").value;
+      const rePass = document.getElementById("regRePass").value;
+      const ign = document.getElementById("regIGN").value;
 
-      if (!ign || !email || !pass || !repass) {
-        alert("Please fill in all fields.");
+      if (pass !== rePass) {
+        alert("Passwords do not match");
         return;
       }
 
-      if (pass !== repass) {
-        alert("Passwords do not match.");
-        return;
-      }
+      createUserWithEmailAndPassword(auth, email, pass)
+        .then(userCred => {
+          set(ref(db, 'users/' + ign), {
+            email,
+            ign,
+            xcoins: 0,
+            linksCompletedToday: 0,
+            lastClaimDate: "",
+            rank: "default"
+          });
+          localStorage.setItem("xfight_ign", ign);
+          window.location.href = "dashboard.html";
+        })
+        .catch(err => alert(err.message));
+    });
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-        const uid = userCredential.user.uid;
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("logEmail").value;
+      const pass = document.getElementById("logPass").value;
+      const ign = document.getElementById("logIGN").value;
 
-        await set(ref(db, 'users/' + ign), {
-          uid,
-          ign,
-          email,
-          xcoins: 0,
-          linksCompletedToday: 0,
-          lastClaimDate: ""
-        });
-
-        alert("Registered successfully!");
-      } catch (error) {
-        alert("Error: " + error.message);
-      }
-    };
-
-    window.login = async () => {
-      const email = document.getElementById("email").value.trim();
-      const pass = document.getElementById("pass").value;
-
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        const ign = document.getElementById("ign").value.trim();
-        localStorage.setItem("xfight_ign", ign);
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        alert("Login failed: " + error.message);
-      }
-    };
+      signInWithEmailAndPassword(auth, email, pass)
+        .then(() => {
+          localStorage.setItem("xfight_ign", ign);
+          window.location.href = "dashboard.html";
+        })
+        .catch(err => alert("Login failed: " + err.message));
+    });
   </script>
 
-  <style>
-    body {
-      background: #0f0f0f;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 60px;
-    }
-
-    h1 {
-      color: #00ffd5;
-    }
-
-    .container {
-      background: #1a1a1a;
-      padding: 30px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 400px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      background: #222;
-      border: 1px solid #333;
-      color: #fff;
-      border-radius: 5px;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      background: #00ffd5;
-      color: #000;
-      border: none;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #00cbb0;
-    }
-  </style>
-</head>
-<body>
-  <h1>Xfight Club</h1>
-  <div class="container">
-    <input type="text" id="ign" placeholder="Minecraft IGN">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="pass" placeholder="Password">
-    <input type="password" id="repass" placeholder="Re-type Password">
-
-    <button onclick="login()">Login</button>
-    <button onclick="register()">Register</button>
-  </div>
 </body>
 </html>
