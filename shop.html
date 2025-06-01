@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Xfight Club – Shop</title>
+  <style>
+    body {
+      background-color: #0d1117;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    .item {
+      background: #161b22;
+      margin: 10px auto;
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 400px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #238636;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2ea043;
+    }
+  </style>
+</head>
+<body>
+  <h1>Item Shop</h1>
+  <p>Your X-Coins: <span id="coins">Loading...</span></p>
+
+  <div id="shop"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPrcws5Yu-oYkJNfUXten17goXK2FnKUg",
+      authDomain: "xfight-club.firebaseapp.com",
+      projectId: "xfight-club",
+      storageBucket: "xfight-club.firebasestorage.app",
+      messagingSenderId: "798788118687",
+      appId: "1:798788118687:web:319f89f5f60607310b1aaa",
+      measurementId: "G-KTH8MZSER1",
+      databaseURL: "https://xfight-club-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const items = [
+      { name: "X-VIP", cost: 1000 },
+      { name: "X-VIP+", cost: 1500 },
+      { name: "X-MVP", cost: 2000 },
+      { name: "X-MVP+", cost: 2500 },
+      { name: "X-MVP++", cost: 3000 },
+      { name: "X-Men", cost: 5000 },
+      { name: "X-Women", cost: 5000 }
+    ];
+
+    const shop = document.getElementById("shop");
+    const coinsDisplay = document.getElementById("coins");
+    let userId = "";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      userId = user.uid;
+      const userRef = ref(db, "users/" + userId);
+      const snapshot = await get(userRef);
+      const data = snapshot.val();
+      coinsDisplay.innerText = data.coins;
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <h3>${item.name}</h3>
+          <p>Cost: ${item.cost} X-Coins</p>
+          <button onclick="buyItem('${item.name}', ${item.cost})">Buy</button>
+        `;
+        shop.appendChild(div);
+      });
+    });
+
+    window.buyItem = async function (itemName, cost) {
+      const userRef = ref(db, "users/" + userId);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      if (userData.coins >= cost) {
+        const newCoins = userData.coins - cost;
+        await update(userRef, {
+          coins: newCoins,
+          lastPurchase: itemName
+        });
+        alert(`Purchased ${itemName}!`);
+        location.reload();
+      } else {
+        alert("Not enough coins!");
+      }
+    };
+  </script>
+</body>
+</html>
